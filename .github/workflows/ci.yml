@@ -26,3 +26,10 @@ jobs:
 
     - name: Build
       run: go build -v .
+      
+    - name: Upload release
+      uses: yakuhzi/action-release@v1
+      with:
+        file: webtail
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
