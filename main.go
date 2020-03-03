@@ -17,9 +17,9 @@ var (
 	flagT = flag.Int64("t", 5, "refresh time")
 	flagS = flag.Int64("s", 0, "skip body byte")
 	flagC = flag.Int64("c", 600, "max no data wait seconds")
-	flagM = flag.Int64("m", 100000, "max body size")
+	flagM = flag.Int64("m", 1000000, "max body size")
 	flagF = flag.Bool("f", false, "follow log")
-	flagL = flag.Int64("l", 0, "last body byte, override -s")
+	flagL = flag.Int64("l", -1, "last body byte, override -s")
 	flagA = flag.Bool("a", false, "show animation icon")
 )
 
@@ -62,11 +62,17 @@ func main() {
 	}
 	fmt.Printf("query: %s\n", u)
 	var cur = *flagS
-	if *flagL > 0 {
+	if *flagL >= 0 {
+		if *flagL == 0 {
+			*flagL = 1
+		}
 		if r, e := c.Head(u); e != nil {
 			panic(e)
 		} else {
 			cur = r.ContentLength - *flagL
+		}
+		if cur < 0 {
+			cur = 0
 		}
 	}
 
@@ -76,7 +82,11 @@ func main() {
 		if e != nil {
 			panic(e)
 		}
-		req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", cur, cur+*flagM-1))
+		if *flagM <= 0 {
+			req.Header.Set("Range", fmt.Sprintf("bytes=%d-", cur))
+		}else {
+			req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", cur, cur+*flagM-1))
+		}
 		if *flagA {
 			sp.UpdateCharSet(spinner.CharSets[39])
 			sp.Start()
