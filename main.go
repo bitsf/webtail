@@ -15,6 +15,7 @@ import (
 
 var (
 	flagT = flag.Int64("t", 5, "refresh time")
+	flagR = flag.Int64("r", 3, "retry times")
 	flagS = flag.Int64("s", 0, "skip body byte")
 	flagC = flag.Int64("c", 600, "max no data wait seconds")
 	flagM = flag.Int64("m", 1000000, "max body size")
@@ -77,6 +78,7 @@ func main() {
 	}
 
 	var nodatatime int64
+	retry := *flagR
 	for {
 		req, e := http.NewRequest(http.MethodGet, u, nil)
 		if e != nil {
@@ -92,8 +94,14 @@ func main() {
 			sp.Start()
 		}
 		if r, e := c.Do(req); e != nil {
-			panic(e)
+			if retry <=0 {
+				panic(e)
+			} else {
+				retry -= 1
+				fmt.Printf("***** error:", e)
+			}
 		} else {
+			retry = *flagR
 			if *flagA {
 				sp.Stop()
 			}
@@ -135,6 +143,9 @@ func main() {
 							nodatatime = 0
 						}
 					} else {
+						if *flagF {
+							fmt.Println("no range to follow")
+						}
 						break
 					}
 				}
